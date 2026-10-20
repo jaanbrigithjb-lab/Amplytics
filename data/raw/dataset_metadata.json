@@ -1,0 +1,28 @@
+{
+  "primary_source": "UCI Electricity Load Diagrams 2011-2014",
+  "url": "https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014",
+  "license": "CC BY 4.0",
+  "seed": 42,
+  "max_clients_used": 100,
+  "n_households": 100,
+  "n_billing_periods": 3475,
+  "n_daily_rows": 102752,
+  "real_fields": [
+    "daily_units",
+    "household_id",
+    "previous_period_units",
+    "actual_final_units"
+  ],
+  "derived_fields": {
+    "target_units": "prior_period_units * clip(N(1.0, 0.10), 0.85, 1.15), min 30",
+    "target_exceeded": "actual_final_units > target_units",
+    "period_start_date/end_date": "first/last observed day of the calendar month",
+    "household_size": "placeholder 3",
+    "appliances": "empty \u2014 users enter in app"
+  },
+  "limitations": [
+    "Targets are derived, not real. The target-exceedance model therefore learns a synthetic label. Do not present its metrics as real-world exceedance prediction accuracy.",
+    "The first calendar month per household is dropped (no prior period).",
+    "Data represents 15-minute average kW; daily kWh is 0.25 * sum over intervals."
+  ]
+}
