@@ -1,0 +1,299 @@
+/* Small overrides on top of Tailwind CDN */
+html {
+  scroll-behavior: smooth;
+}
+
+canvas {
+  max-height: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   Connection status — online / offline (responsive)
+   Body classes are toggled by /static/js/connection.js
+   --------------------------------------------------------------------------- */
+
+:root {
+  --conn-online: #059669;
+  --conn-online-bg: #ecfdf5;
+  --conn-online-border: #a7f3d0;
+  --conn-offline: #dc2626;
+  --conn-offline-bg: #fef2f2;
+  --conn-offline-border: #fecaca;
+  --conn-banner-h: 0px;
+  --conn-transition: 220ms ease;
+}
+
+/* Reserve space when offline banner is visible */
+body.is-offline {
+  --conn-banner-h: 2.75rem;
+  padding-top: var(--conn-banner-h);
+}
+
+/* ---- Banner (shown only when offline) ----------------------------------- */
+
+.connection-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--conn-banner-h, 0);
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  background: var(--conn-offline-bg);
+  color: var(--conn-offline);
+  border-bottom: 1px solid transparent;
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    max-height var(--conn-transition),
+    transform var(--conn-transition),
+    opacity var(--conn-transition),
+    border-color var(--conn-transition);
+}
+
+body.is-offline .connection-banner {
+  max-height: 4rem;
+  min-height: 2.75rem;
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+  border-bottom-color: var(--conn-offline-border);
+}
+
+.connection-banner__icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.connection-banner__text {
+  margin: 0;
+}
+
+.connection-banner__retry {
+  flex-shrink: 0;
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--conn-offline);
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.connection-banner__retry:hover {
+  background: #b91c1c;
+}
+
+.connection-banner__retry:focus-visible {
+  outline: 2px solid var(--conn-offline);
+  outline-offset: 2px;
+}
+
+/* ---- Status pill (header / nav indicator) ------------------------------- */
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition:
+    background var(--conn-transition),
+    color var(--conn-transition),
+    border-color var(--conn-transition);
+}
+
+.connection-status__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+body.is-online .connection-status {
+  color: var(--conn-online);
+  background: var(--conn-online-bg);
+  border-color: var(--conn-online-border);
+}
+
+body.is-online .connection-status__dot {
+  background: var(--conn-online);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
+}
+
+body.is-offline .connection-status {
+  color: var(--conn-offline);
+  background: var(--conn-offline-bg);
+  border-color: var(--conn-offline-border);
+}
+
+body.is-offline .connection-status__dot {
+  background: var(--conn-offline);
+  animation: connection-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes connection-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+/* Screen-reader label swap */
+.connection-status__label-offline {
+  display: none;
+}
+
+body.is-offline .connection-status__label-online {
+  display: none;
+}
+
+body.is-offline .connection-status__label-offline {
+  display: inline;
+}
+
+/* ---- Offline page dimming / disabled actions ---------------------------- */
+
+body.is-offline .offline-sensitive {
+  opacity: 0.55;
+  filter: grayscale(0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
+body.is-offline form.requires-network button[type="submit"],
+body.is-offline form.requires-network input[type="submit"],
+body.is-offline a.requires-network {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Brief flash when reconnecting */
+body.just-reconnected .connection-status {
+  animation: connection-flash 1.2s ease;
+}
+
+@keyframes connection-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(5, 150, 105, 0);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
+/* ---- Responsive --------------------------------------------------------- */
+
+/* Tablet */
+@media (max-width: 768px) {
+  body.is-offline {
+    --conn-banner-h: 3.25rem;
+  }
+
+  .connection-banner {
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .connection-status {
+    font-size: 0.6875rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  /* Collapse long label on mid screens — keep icon + short text */
+  .connection-status__label-online::after {
+    content: none;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  body.is-offline {
+    --conn-banner-h: auto;
+    padding-top: 3.5rem;
+  }
+
+  .connection-banner {
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.55rem 0.75rem;
+    max-height: none;
+  }
+
+  body.is-offline .connection-banner {
+    min-height: 3.5rem;
+    max-height: 6rem;
+  }
+
+  .connection-banner__retry {
+    width: 100%;
+    max-width: 10rem;
+    padding: 0.35rem 0.75rem;
+  }
+
+  /* Compact pill: show abbreviated labels via data attributes if needed */
+  .connection-status {
+    gap: 0.3rem;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+/* Very small / landscape phones */
+@media (max-width: 360px) {
+  .connection-banner__text {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .connection-banner,
+  .connection-status,
+  body.is-offline .connection-status__dot,
+  body.just-reconnected .connection-status {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Print: never show connection UI */
+@media print {
+  .connection-banner,
+  .connection-status {
+    display: none !important;
+  }
+
+  body.is-offline {
+    padding-top: 0;
+  }
+}

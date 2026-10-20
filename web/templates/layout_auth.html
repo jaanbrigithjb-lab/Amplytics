@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-slate-50 to-slate-100">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-6">
+      <a href="/" class="text-3xl font-semibold text-slate-900">⚡ Amplytics</a>
+      <p class="text-sm text-slate-500 mt-1">Track your household electricity target</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+      {% block content %}{% endblock %}
+    </div>
+    <p class="text-center text-xs text-slate-400 mt-6">
+      Prototype · Synthetic models may be in use · See dashboard labels
+    </p>
+  </div>
+</div>
+{% endblock %}

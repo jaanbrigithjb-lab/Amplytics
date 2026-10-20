@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="flex min-h-screen">
+  <aside class="w-64 bg-slate-900 text-slate-200 fixed inset-y-0 left-0 flex flex-col">
+    <div class="px-6 py-5 border-b border-slate-800">
+      <a href="/dashboard" class="text-xl font-semibold text-white">⚡ Amplytics</a>
+      <p class="text-xs text-slate-400 mt-1">Household electricity tracking</p>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1">
+      {% set items = [
+        ('/dashboard',   'Dashboard'),
+        ('/billing',     'Billing periods'),
+        ('/appliances',  'Appliances'),
+        ('/consumption', 'Daily consumption'),
+        ('/household',   'Household'),
+      ] %}
+      {% for href, label in items %}
+        {% set active = request.url.path == href %}
+        <a href="{{ href }}"
+           class="block px-3 py-2 rounded-lg text-sm font-medium
+           {% if active %}bg-indigo-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">
+          {{ label }}
+        </a>
+      {% endfor %}
+    </nav>
+    <div class="px-4 py-4 border-t border-slate-800 space-y-3">
+      {% if current_user %}
+      <div>
+        <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">Household</p>
+        <p class="text-sm font-medium text-white truncate">{{ current_user.display_name }}</p>
+        <p class="text-xs text-slate-400 truncate">{{ current_user.user_id }}</p>
+      </div>
+      {% if households|length > 1 %}
+      <form method="post" action="/switch">
+        <select name="uid" onchange="this.form.submit()"
+                class="w-full text-sm bg-slate-800 text-slate-200 rounded-lg px-2 py-1.5 border border-slate-700">
+          {% for h in households %}
+          <option value="{{ h.user_id }}" {% if h.user_id == current_user.user_id %}selected{% endif %}>
+            {{ h.display_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+      <form method="post" action="/logout">
+        <button class="w-full text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800">
+          Sign out
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </aside>
+
+  <main class="flex-1 ml-64">
+    <div class="border-b border-slate-200 bg-white px-8 py-4 flex items-center justify-between gap-3 flex-wrap">
+      <div class="text-sm text-slate-500">
+        {% block breadcrumb %}Amplytics{% endblock %}
+      </div>
+      <div class="flex items-center gap-3 text-sm text-slate-500">
+        <span id="connection-status" class="connection-status" role="status" aria-label="You are online">
+          <span class="connection-status__dot" aria-hidden="true"></span>
+          <span class="connection-status__label-online">Online</span>
+          <span class="connection-status__label-offline">Offline</span>
+        </span>
+        {% if current_user %}{{ current_user.display_name }} · {{ current_user.household_size }} person(s){% endif %}
+      </div>
+    </div>
+    <div class="px-8 py-6 max-w-7xl mx-auto">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+{% endblock %}

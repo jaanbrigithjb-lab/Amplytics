@@ -1,0 +1,43 @@
+{
+  "trained_at": "2026-10-18T14:13:59",
+  "data_source": "synthetic",
+  "n_train_rows": 10424,
+  "n_test_rows": 3476,
+  "n_train_periods": 2606,
+  "n_test_periods": 869,
+  "features": [
+    "target_units",
+    "period_days",
+    "elapsed_days",
+    "days_remaining",
+    "cumulative_units",
+    "average_daily_units",
+    "previous_period_units"
+  ],
+  "regression": {
+    "linear_regression": {
+      "mae": 3173.3024143600373,
+      "rmse": 8169.198046964512
+    },
+    "baseline_projection": {
+      "mae": 2158.9321627805034,
+      "rmse": 6183.923337904873
+    }
+  },
+  "classification": {
+    "precision": 0.8198791872597474,
+    "recall": 0.8620092378752887,
+    "f1": 0.8404165493948775,
+    "confusion_matrix": [
+      [
+        1416,
+        328
+      ],
+      [
+        239,
+        1493
+      ]
+    ]
+  },
+  "limitations": "Model trained on SYNTHETIC data. Metrics describe only this synthetic distribution. Do not present as real-world accuracy. Models are NOT retrained on user input; retraining is a separate process."
+}

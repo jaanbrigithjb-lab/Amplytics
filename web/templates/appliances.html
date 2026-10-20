@@ -1,0 +1,82 @@
+{% extends "layout_app.html" %}
+{% block title %}Appliances · Amplytics{% endblock %}
+{% block breadcrumb %}Appliances{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-900">
+    Appliance estimates are informational only. They are <b>not</b> added to your
+    daily meter records — never double-count the same usage.
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="font-semibold text-slate-900 mb-4">Add appliance</h2>
+    <form method="post" action="/appliances/add" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
+        <input name="name" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+      </div>
+      <!-- <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
+        <input name="atype" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+      </div> -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Watts</label>
+        <input name="watts" type="number" min="1" value="100" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Qty</label>
+        <input name="qty" type="number" min="1" value="1" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Hrs/day</label>
+        <input name="hours" type="number" min="0" max="24" step="0.5" value="4" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-slate-700 mb-1">Days/week</label>
+        <input name="days" type="number" min="0" max="7" step="0.5" value="7" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
+      </div>
+      <div class="md:col-span-4">
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg">
+          Add appliance
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-slate-600 text-left text-xs uppercase tracking-wider">
+        <tr>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3 text-right">Watts</th>
+          <th class="px-4 py-3 text-right">Qty</th>
+          <th class="px-4 py-3 text-right">Hrs/day</th>
+          <th class="px-4 py-3 text-right">Days/wk</th>
+          <th class="px-4 py-3 text-right">Est. daily kWh</th>
+          <th class="px-4 py-3 text-right">ACTIONS</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for a in appliances %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 font-medium">{{ a.appliance_name }}</td>
+          <td class="px-4 py-3 text-right">{{ "%.0f"|format(a.rated_power_watts) }}</td>
+          <td class="px-4 py-3 text-right">{{ "%.0f"|format(a.quantity) }}</td>
+          <td class="px-4 py-3 text-right">{{ "%.0f"|format(a.hours_per_day) }}</td>
+          <td class="px-4 py-3 text-right">{{ "%.0f"|format(a.days_per_week) }}</td>
+          <td class="px-4 py-3 text-right font-medium">{{ "%.3f"|format(a.estimated_daily_units) }}</td>
+          <td class="px-4 py-3 text-right">
+            <form method="post" action="/appliances/{{ a.appliance_id }}/delete" onsubmit="return confirm('Delete this appliance?')">
+              <button class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">No appliances yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
