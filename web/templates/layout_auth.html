@@ -2,9 +2,12 @@
 {% block body %}
 <div class="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-slate-50 to-slate-100">
   <div class="w-full max-w-md">
-    <div class="text-center mb-6">
-      <a href="/" class="text-3xl font-semibold text-slate-900">⚡ Amplytics</a>
-      <p class="text-sm text-slate-500 mt-1">Track your household electricity target</p>
+    <div class="auth-brand">
+      <a href="/" class="auth-brand-link">
+        <span class="app-brand-mark" aria-hidden="true">A</span>
+        <span>Amplytics</span>
+      </a>
+      <p>Track your household energy with confidence</p>
     </div>
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
       {% block content %}{% endblock %}

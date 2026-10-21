@@ -30,7 +30,7 @@
   </div>
 
   {# KPI cards #}
-  <div class="dashboard-kpis grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="dashboard-kpis grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
       <p class="text-xs uppercase tracking-wider text-slate-500">Cumulative usage</p>
       <p class="text-2xl font-semibold text-slate-900 mt-2">{{ "%.2f"|format(summary.cumulative_including_today) }} <span class="text-sm text-slate-500">kWh</span></p>
@@ -61,6 +61,13 @@
       <p class="text-2xl font-semibold text-slate-900 mt-2">{{ summary.days_remaining_including_today }}</p>
       <p class="text-xs text-slate-500 mt-1">Avg so far {{ "%.2f"|format(summary.average_daily_units) }} kWh/day</p>
     </div>
+    <!-- <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+      <p class="text-xs uppercase tracking-wider text-slate-500">Estimated cumulative electricity charge</p>
+      <p class="text-2xl font-semibold text-slate-900 mt-2">₹{{ "%.2f"|format(electricity_bill_estimate) }}</p>
+      <p class="text-xs text-slate-500 mt-1">
+        Through {{ effective_today }} · excludes fixed charges and taxes
+      </p>
+    </div> -->
   </div>
 
   {# Progress bar #}
@@ -104,6 +111,7 @@
       <h2 class="font-semibold text-slate-900">Baseline projection</h2>
       <p class="text-xs text-slate-500 mb-3">Rule-based, uses average daily × period days.</p>
       <p class="text-2xl font-semibold text-slate-900">{{ "%.2f"|format(summary.baseline_projected_final_units) }} <span class="text-sm text-slate-500">kWh</span></p>
+      <p class="text-sm text-slate-600 mt-2">Projected final energy charge: <b>₹{{ "%.2f"|format(projected_final_bill_estimate) }}</b></p>
       {% if summary.baseline_projected_final_units > summary.target_units %}
       <p class="text-sm text-amber-700 mt-2">Above your target by {{ "%.2f"|format(summary.baseline_projected_final_units - summary.target_units) }} kWh.</p>
       {% else %}

@@ -14,7 +14,9 @@ from alerts import ml_alert, rule_based_alerts
 from calculations import (
     ConsumptionRecord,
     PREDICTED_DATA_TYPE,
+    TAMIL_NADU_DOMESTIC_TARIFF_SLABS,
     calculate_summary,
+    estimate_tamil_nadu_electricity_charge,
     fill_missing_daily_records,
 )
 from config import CLASSIFIER_WARNING_THRESHOLD
@@ -380,6 +382,73 @@ def appliance_delete(request: Request, appliance_id: int):
     return RedirectResponse("/appliances", 303)
 
 
+# ---------- bill estimator ----------
+
+@router.get("/bill-estimator")
+def bill_estimator_page(request: Request, bp_id: Optional[str] = None):
+    uid = current_uid(request)
+    if not uid:
+        return RedirectResponse("/", 303)
+    periods = db.list_billing_periods(uid)
+    if not periods:
+        set_flash(request, "info", "Create a billing period to estimate your bill.")
+        return RedirectResponse("/billing", 303)
+
+    period = next((p for p in periods if p["billing_period_id"] == bp_id), periods[0])
+    p_start = date.fromisoformat(period["period_start_date"])
+    p_end = date.fromisoformat(period["period_end_date"])
+    period_days = (p_end - p_start).days + 1
+    previous_units = period.get("previous_period_units")
+    historical_daily = (
+        float(previous_units) / period_days
+        if previous_units is not None and period_days > 0
+        else None
+    )
+
+    def predict_missing(
+        _day: date, cumulative: float, _elapsed: int, days_remaining: int
+    ) -> float:
+        return (
+            max(0.0, float(period["target_units"]) - cumulative) / days_remaining
+            if days_remaining > 0
+            else 0.0
+        )
+
+    filled = fill_missing_daily_records(
+        household_id=uid,
+        billing_period_id=period["billing_period_id"],
+        period_start=p_start,
+        period_end=p_end,
+        as_of=p_end,
+        records=_records_for(period["billing_period_id"]),
+        historical_daily=historical_daily,
+        predict_daily=predict_missing,
+    )
+    daily_data = [
+        {
+            "date": record.date.isoformat(),
+            "units": record.daily_units,
+            "data_type": record.data_type,
+        }
+        for record in filled
+    ]
+    projected_period_units = sum(record.daily_units for record in filled)
+    projected_final_bill = estimate_tamil_nadu_electricity_charge(
+        projected_period_units
+    )
+
+    return render(
+        request,
+        "bill_estimator.html",
+        periods=periods,
+        period=period,
+        daily_data=daily_data,
+        tariff_slabs=TAMIL_NADU_DOMESTIC_TARIFF_SLABS,
+        projected_period_units=projected_period_units,
+        projected_final_bill=projected_final_bill,
+    )
+
+
 # ---------- consumption ----------
 
 @router.get("/consumption")
@@ -522,6 +591,13 @@ def dashboard(
         period_start=p_start, period_end=p_end,
         today=effective_today, records=filled,
     )
+    billable_units = summary.cumulative_including_today
+    electricity_bill_estimate = estimate_tamil_nadu_electricity_charge(
+        billable_units
+    )
+    projected_final_bill_estimate = estimate_tamil_nadu_electricity_charge(
+        summary.baseline_projected_final_units
+    )
     rule_alerts = rule_based_alerts(summary)
 
     ml_final = None
@@ -556,6 +632,9 @@ def dashboard(
     return render(
         request, "dashboard.html",
         periods=periods, period=period, summary=summary,
+        billable_units=billable_units,
+        electricity_bill_estimate=electricity_bill_estimate,
+        projected_final_bill_estimate=projected_final_bill_estimate,
         rule_alerts=rule_alerts,
         ml_final=ml_final, ml_proba=ml_proba, ml_alert_obj=ml_alert_obj,
         model_meta=meta,

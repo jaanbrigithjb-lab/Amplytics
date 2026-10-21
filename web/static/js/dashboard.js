@@ -101,6 +101,7 @@
   });
 
   const commonOpts = {
+    color: document.documentElement.dataset.theme === "black" ? "#d4d4d8" : "#475467",
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
@@ -324,4 +325,14 @@
       },
     });
   }
+
+  document.addEventListener("amplytics-theme-change", (event) => {
+    const color = event.detail.theme === "black" ? "#d4d4d8" : "#475467";
+    document.querySelectorAll("canvas").forEach((canvas) => {
+      const chart = Chart.getChart(canvas);
+      if (!chart) return;
+      chart.options.color = color;
+      chart.update("none");
+    });
+  });
 })();

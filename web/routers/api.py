@@ -4,7 +4,12 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 import db
 from alerts import ml_alert, rule_based_alerts
-from calculations import ConsumptionRecord, calculate_summary
+from calculations import (
+    ConsumptionRecord,
+    calculate_summary,
+    estimate_tamil_nadu_electricity_charge,
+    tamil_nadu_tariff_slab,
+)
 from config import CLASSIFIER_WARNING_THRESHOLD
 from model_loader import load_models, models_available, predict
 
@@ -18,13 +23,13 @@ def _uid(request: Request) -> str:
     return uid
 
 
-def _summary_for(uid: str, bp_id: str):
+def _summary_for(uid: str, bp_id: str, as_of: date | None = None):
     period = db.get_billing_period(bp_id)
     if not period or period["user_id"] != uid:
         raise HTTPException(404, "Billing period not found")
     p_start = date.fromisoformat(period["period_start_date"])
     p_end = date.fromisoformat(period["period_end_date"])
-    today = min(max(date.today(), p_start), p_end)
+    selected_date = min(max(as_of or date.today(), p_start), p_end)
     records = [
         ConsumptionRecord(
             household_id=r["user_id"], billing_period_id=r["billing_period_id"],
@@ -36,16 +41,34 @@ def _summary_for(uid: str, bp_id: str):
     ]
     summary = calculate_summary(
         target_units=float(period["target_units"]),
-        period_start=p_start, period_end=p_end, today=today, records=records,
+        period_start=p_start, period_end=p_end, today=selected_date, records=records,
     )
-    return period, summary
+    return period, summary, selected_date
+
+
+def _charge_fields(cumulative_units: float, projected_units: float) -> dict:
+    slab, rate = tamil_nadu_tariff_slab(cumulative_units)
+    return {
+        "cumulative_electricity_charge": estimate_tamil_nadu_electricity_charge(
+            cumulative_units
+        ),
+        "cumulative_tariff_slab": slab,
+        "cumulative_tariff_rate_per_unit": rate,
+        "baseline_projected_final_electricity_charge":
+            estimate_tamil_nadu_electricity_charge(projected_units),
+    }
 
 
 @router.get("/summary")
-def get_summary(request: Request, bp_id: str = Query(...)):
+def get_summary(
+    request: Request,
+    bp_id: str = Query(...),
+    as_of: date | None = Query(None),
+):
     uid = _uid(request)
-    _, s = _summary_for(uid, bp_id)
+    _, s, selected_date = _summary_for(uid, bp_id, as_of)
     return {
+        "as_of": selected_date.isoformat(),
         "target_units": s.target_units,
         "cumulative_including_today": s.cumulative_including_today,
         "remaining_target_units": s.remaining_target_units,
@@ -60,15 +83,29 @@ def get_summary(request: Request, bp_id: str = Query(...)):
         "measured_cumulative_units": s.measured_cumulative_units,
         "estimated_cumulative_units": s.estimated_cumulative_units,
         "predicted_cumulative_units": s.predicted_cumulative_units,
+        **_charge_fields(
+            s.cumulative_including_today, s.baseline_projected_final_units
+        ),
     }
 
 
 @router.get("/predict")
-def get_prediction(request: Request, bp_id: str = Query(...)):
+def get_prediction(
+    request: Request,
+    bp_id: str = Query(...),
+    as_of: date | None = Query(None),
+):
     uid = _uid(request)
-    period, s = _summary_for(uid, bp_id)
+    period, s, selected_date = _summary_for(uid, bp_id, as_of)
     if not models_available():
-        return {"models_available": False, "baseline_projected_final_units": s.baseline_projected_final_units}
+        return {
+            "as_of": selected_date.isoformat(),
+            "models_available": False,
+            "baseline_projected_final_units": s.baseline_projected_final_units,
+            **_charge_fields(
+                s.cumulative_including_today, s.baseline_projected_final_units
+            ),
+        }
     reg, clf, meta = load_models()
     prev = period.get("previous_period_units")
     feats = {
@@ -82,9 +119,15 @@ def get_prediction(request: Request, bp_id: str = Query(...)):
     }
     ml_final, ml_proba = predict(reg, clf, feats)
     return {
+        "as_of": selected_date.isoformat(),
         "models_available": True,
         "baseline_projected_final_units": s.baseline_projected_final_units,
+        **_charge_fields(
+            s.cumulative_including_today, s.baseline_projected_final_units
+        ),
         "ml_predicted_final_units": ml_final,
+        "ml_predicted_final_electricity_charge":
+            estimate_tamil_nadu_electricity_charge(ml_final),
         "ml_probability_exceed": ml_proba,
         "threshold": CLASSIFIER_WARNING_THRESHOLD,
         "model_metadata": {
