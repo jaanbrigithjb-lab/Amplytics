@@ -70,15 +70,36 @@ consumption, view target-pace calculations, a baseline projection, and
   Model A — Linear Regression
   Model B — Logistic Regression
 
-## Project Setup Step By Step Instructions:
+## Setup
+
+## First Time
 
 # 1. Create and activate a virtual environment
-python -m venv .venv                 # Create Virtual Environment
-source .venv/bin/activate            # Run in mac-OS/Linux
-.venv\Scripts\activate               # Run in Windows (Power Shell)
+python -m venv .venv
+source .venv/bin/activate            # macOS/Linux
+.venv\Scripts\activate               # Windows (PowerShell)
 
-# 2. Install dependencies  # Install Python Dependencies
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Launch the app   # Run The Fast-API App
+# 3. Choose ONE data path (see section 4 below), then run the pipeline:
+
+#    Path — real public dataset (recommended for your report)
+python scripts/convert_uci_load_diagrams.py
+python scripts/build_training_data.py
+python scripts/train_models.py
+
+# 4. Run the tests once
+pytest -q
+
+# 5. Launch the app
+uvicorn web.main:app --reload
+
+## Second Time
+
+# Activate the environment
+source .venv/bin/activate            # macOS/Linux
+.venv\Scripts\activate               # Windows
+
+# Launch the app
 uvicorn web.main:app --reload

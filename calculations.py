@@ -1,10 +1,81 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
+from math import isfinite
 from typing import Callable, Iterable
 
 # the consumption engine
 
 PREDICTED_DATA_TYPE = "predicted"
+
+TAMIL_NADU_DOMESTIC_TARIFF_SLABS = {
+    "up_to_500": ((100, 0.0), (100, 0.0), (200, 4.70), (100, 6.30)),
+    "above_500": (
+        (100, 0.0),
+        (300, 4.70),
+        (100, 6.30),
+        (100, 8.40),
+        (200, 9.45),
+        (200, 10.50),
+        (None, 11.55),
+    ),
+}
+
+
+def estimate_tamil_nadu_electricity_charge(units: float) -> float:
+    """Estimate energy charges from the Tamil Nadu tariff schedule in use.
+
+    Usage up to 500 units uses the up-to-500 schedule; usage above 500 units
+    uses the higher-consumption schedule. Fixed charges and taxes are excluded.
+    """
+    if not isfinite(units) or units < 0:
+        raise ValueError("units must be a finite value >= 0")
+
+    slabs = (
+        TAMIL_NADU_DOMESTIC_TARIFF_SLABS["up_to_500"]
+        if units <= 500
+        else TAMIL_NADU_DOMESTIC_TARIFF_SLABS["above_500"]
+    )
+
+    remaining = units
+    charge = 0.0
+    for slab_units, rate in slabs:
+        billed_units = min(
+            remaining, slab_units if slab_units is not None else remaining
+        )
+        charge += billed_units * rate
+        remaining -= billed_units
+        if remaining <= 0:
+            break
+
+    return round(charge, 2)
+
+
+def tamil_nadu_tariff_slab(units: float) -> tuple[str, float]:
+    """Return the applicable progressive tariff slab label and rate for units."""
+    if not isfinite(units) or units < 0:
+        raise ValueError("units must be a finite value >= 0")
+
+    slabs = (
+        TAMIL_NADU_DOMESTIC_TARIFF_SLABS["up_to_500"]
+        if units <= 500
+        else TAMIL_NADU_DOMESTIC_TARIFF_SLABS["above_500"]
+    )
+    lower_bound = 0
+    for slab_units, rate in slabs:
+        upper_bound = (
+            lower_bound + slab_units if slab_units is not None else float("inf")
+        )
+        if units <= upper_bound:
+            label = (
+                f"{lower_bound if lower_bound == 0 else lower_bound + 1}"
+                f"–{int(upper_bound)} units"
+                if slab_units is not None
+                else f"Above {lower_bound} units"
+            )
+            return label, rate
+        lower_bound = int(upper_bound)
+
+    raise RuntimeError("Tariff schedule does not cover the supplied units")
 
 
 @dataclass(frozen=True)
@@ -67,6 +138,7 @@ def calculate_summary(
         if period_start <= r.date <= period_end
         and (include_estimated or r.data_type == "measured")
     ]
+    cumulative_records = [r for r in period_records if r.date <= today]
 
     if today < period_start:
         elapsed_days = 0
@@ -85,10 +157,14 @@ def calculate_summary(
         units_today = sum(r.daily_units for r in period_records if r.date == today)
 
     cumulative = cumulative_before + units_today
-    measured = sum(r.daily_units for r in period_records if r.data_type == "measured")
-    estimated = sum(r.daily_units for r in period_records if r.data_type == "estimated")
+    measured = sum(
+        r.daily_units for r in cumulative_records if r.data_type == "measured"
+    )
+    estimated = sum(
+        r.daily_units for r in cumulative_records if r.data_type == "estimated"
+    )
     predicted = sum(
-        r.daily_units for r in period_records if r.data_type == PREDICTED_DATA_TYPE
+        r.daily_units for r in cumulative_records if r.data_type == PREDICTED_DATA_TYPE
     )
 
     remaining_target = max(0.0, target_units - cumulative)
