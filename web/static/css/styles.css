@@ -3,8 +3,283 @@ html {
   scroll-behavior: smooth;
 }
 
+body {
+  min-width: 320px;
+}
+
 canvas {
   max-height: 100%;
+}
+
+/* App layout */
+.app-sidebar {
+  z-index: 20;
+}
+
+.app-menu-toggle,
+.app-sidebar-overlay {
+  display: none;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.app-content {
+  width: 100%;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table {
+  min-width: 100%;
+}
+
+.responsive-table--billing {
+  min-width: 760px;
+}
+
+.responsive-table--appliances {
+  min-width: 820px;
+}
+
+.responsive-table--consumption,
+.responsive-table--dashboard {
+  min-width: 600px;
+}
+
+@media (max-width: 900px) {
+  .app-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    width: 14rem !important;
+    height: 100vh;
+    flex: none;
+  }
+
+  .app-sidebar > div:first-child {
+    padding: 1.25rem 1rem;
+  }
+
+  .app-nav {
+    display: block;
+    overflow-y: auto;
+    padding: 0.75rem;
+  }
+
+  .app-nav a {
+    white-space: normal;
+    padding: 0.75rem;
+  }
+
+  .app-sidebar-footer {
+    padding: 1rem;
+  }
+
+  .app-main {
+    margin-left: 14rem !important;
+  }
+
+  .app-topbar {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .app-content {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-sidebar {
+    z-index: 41;
+    width: min(17rem, calc(100vw - 3rem)) !important;
+    transform: translateX(-105%);
+    transition: transform 200ms ease;
+    box-shadow: 12px 0 30px rgba(15, 23, 42, 0.25);
+  }
+
+  body.mobile-nav-open {
+    overflow: hidden;
+  }
+
+  body.mobile-nav-open .app-sidebar {
+    transform: translateX(0);
+  }
+
+  .app-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 200ms ease, visibility 200ms ease;
+  }
+
+  body.mobile-nav-open .app-sidebar-overlay {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .app-main {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .app-menu-toggle {
+    display: inline-flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    color: #334155;
+    background: #f1f5f9;
+    border-radius: 0.5rem;
+  }
+
+  .app-menu-toggle svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .app-topbar {
+    align-items: center;
+    padding: 0.65rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .app-topbar-leading {
+    min-width: 0;
+  }
+
+  .app-topbar > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .app-content {
+    padding: 1rem;
+  }
+
+  .flash-messages {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+
+  .dashboard-heading {
+    gap: 0.75rem;
+  }
+
+  .dashboard-heading h1 {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-filters {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    width: 100%;
+    gap: 0.5rem 0.65rem;
+  }
+
+  .dashboard-filters select,
+  .dashboard-filters input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .dashboard-kpis > div {
+    min-width: 0;
+    padding: 0.85rem;
+  }
+
+  .dashboard-kpis > div > p:nth-child(2) {
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+  }
+
+  .dashboard-kpis > div > p:last-child {
+    line-height: 1.2rem;
+    overflow-wrap: anywhere;
+  }
+
+  .consumption-period {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .consumption-period form {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .consumption-period select {
+    min-width: 0;
+    max-width: 65%;
+  }
+
+  .appliance-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .appliance-form > div {
+    grid-column: auto;
+  }
+
+  .appliance-form button {
+    width: 100%;
+  }
+
+  .table-scroll {
+    margin: 0;
+  }
+
+  .responsive-table th,
+  .responsive-table td {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .table-scroll::after {
+    content: "Scroll to see more";
+    display: block;
+    position: sticky;
+    left: 0;
+    width: max-content;
+    padding: 0.4rem 0.75rem;
+    color: #64748b;
+    font-size: 0.6875rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-topbar > div:last-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -103,79 +378,6 @@ body.is-offline .connection-banner {
   outline-offset: 2px;
 }
 
-/* ---- Status pill (header / nav indicator) ------------------------------- */
-
-.connection-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  border-radius: 9999px;
-  border: 1px solid transparent;
-  white-space: nowrap;
-  transition:
-    background var(--conn-transition),
-    color var(--conn-transition),
-    border-color var(--conn-transition);
-}
-
-.connection-status__dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-body.is-online .connection-status {
-  color: var(--conn-online);
-  background: var(--conn-online-bg);
-  border-color: var(--conn-online-border);
-}
-
-body.is-online .connection-status__dot {
-  background: var(--conn-online);
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
-}
-
-body.is-offline .connection-status {
-  color: var(--conn-offline);
-  background: var(--conn-offline-bg);
-  border-color: var(--conn-offline-border);
-}
-
-body.is-offline .connection-status__dot {
-  background: var(--conn-offline);
-  animation: connection-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes connection-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.45;
-    transform: scale(0.85);
-  }
-}
-
-/* Screen-reader label swap */
-.connection-status__label-offline {
-  display: none;
-}
-
-body.is-offline .connection-status__label-online {
-  display: none;
-}
-
-body.is-offline .connection-status__label-offline {
-  display: inline;
-}
-
 /* ---- Offline page dimming / disabled actions ---------------------------- */
 
 body.is-offline .offline-sensitive {
@@ -193,23 +395,6 @@ body.is-offline a.requires-network {
   cursor: not-allowed;
 }
 
-/* Brief flash when reconnecting */
-body.just-reconnected .connection-status {
-  animation: connection-flash 1.2s ease;
-}
-
-@keyframes connection-flash {
-  0% {
-    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.45);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(5, 150, 105, 0);
-  }
-  100% {
-    box-shadow: none;
-  }
-}
-
 /* ---- Responsive --------------------------------------------------------- */
 
 /* Tablet */
@@ -225,15 +410,6 @@ body.just-reconnected .connection-status {
     flex-wrap: wrap;
   }
 
-  .connection-status {
-    font-size: 0.6875rem;
-    padding: 0.2rem 0.5rem;
-  }
-
-  /* Collapse long label on mid screens — keep icon + short text */
-  .connection-status__label-online::after {
-    content: none;
-  }
 }
 
 /* Mobile */
@@ -261,11 +437,6 @@ body.just-reconnected .connection-status {
     padding: 0.35rem 0.75rem;
   }
 
-  /* Compact pill: show abbreviated labels via data attributes if needed */
-  .connection-status {
-    gap: 0.3rem;
-    padding: 0.15rem 0.45rem;
-  }
 }
 
 /* Very small / landscape phones */
@@ -278,9 +449,7 @@ body.just-reconnected .connection-status {
 /* Prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .connection-banner,
-  .connection-status,
-  body.is-offline .connection-status__dot,
-  body.just-reconnected .connection-status {
+  body.just-reconnected {
     transition: none;
     animation: none;
   }
@@ -288,8 +457,7 @@ body.just-reconnected .connection-status {
 
 /* Print: never show connection UI */
 @media print {
-  .connection-banner,
-  .connection-status {
+  .connection-banner {
     display: none !important;
   }
 

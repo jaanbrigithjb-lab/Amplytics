@@ -1,6 +1,6 @@
 /**
  * Toggles body.is-online / body.is-offline from navigator.onLine
- * and online/offline window events. Updates banner + status pill.
+ * and online/offline window events. Updates the offline banner.
  */
 (function () {
   const ONLINE = "is-online";
@@ -18,11 +18,6 @@
     const banner = document.getElementById("connection-banner");
     if (banner) {
       banner.setAttribute("aria-hidden", online ? "true" : "false");
-    }
-
-    const status = document.getElementById("connection-status");
-    if (status) {
-      status.setAttribute("aria-label", online ? "You are online" : "You are offline");
     }
 
     if (online && wasOffline) {

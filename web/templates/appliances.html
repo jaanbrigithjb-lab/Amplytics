@@ -10,8 +10,8 @@
 
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <h2 class="font-semibold text-slate-900 mb-4">Add appliance</h2>
-    <form method="post" action="/appliances/add" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-      <div class="md:col-span-2">
+    <form method="post" action="/appliances/add" class="appliance-form grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+      <div class="sm:col-span-2 lg:col-span-2">
         <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
         <input name="name" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
       </div>
@@ -31,11 +31,11 @@
         <label class="block text-sm font-medium text-slate-700 mb-1">Hrs/day</label>
         <input name="hours" type="number" min="0" max="24" step="0.5" value="4" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
       </div>
-      <div class="md:col-span-2">
+      <div class="sm:col-span-2 lg:col-span-2">
         <label class="block text-sm font-medium text-slate-700 mb-1">Days/week</label>
         <input name="days" type="number" min="0" max="7" step="0.5" value="7" required class="w-full rounded-lg border border-slate-300 px-3 py-2">
       </div>
-      <div class="md:col-span-4">
+      <div class="sm:col-span-2 lg:col-span-4">
         <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg">
           Add appliance
         </button>
@@ -44,7 +44,8 @@
   </div>
 
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <table class="w-full text-sm">
+    <div class="table-scroll">
+    <table class="responsive-table responsive-table--appliances w-full text-sm">
       <thead class="bg-slate-50 text-slate-600 text-left text-xs uppercase tracking-wider">
         <tr>
           <th class="px-4 py-3">Name</th>
@@ -77,6 +78,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 {% endblock %}
