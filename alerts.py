@@ -1,7 +1,7 @@
 from calculations import ConsumptionSummary
 from config import CLASSIFIER_WARNING_THRESHOLD
 
-
+# Modified from the original implementation
 def rule_based_alerts(summary: ConsumptionSummary) -> list[dict]:
     """Rule-based alerts. These are deterministic and independent of ML."""
     alerts = []
