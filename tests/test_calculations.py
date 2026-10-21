@@ -5,7 +5,9 @@ from calculations import (
     ConsumptionRecord,
     PREDICTED_DATA_TYPE,
     calculate_summary,
+    estimate_tamil_nadu_electricity_charge,
     fill_missing_daily_records,
+    tamil_nadu_tariff_slab,
 )
 
 
@@ -14,6 +16,76 @@ def rec(d, u, data_type="measured"):
         household_id="H", billing_period_id="BP",
         date=d, daily_units=u, input_method="manual",
         data_type=data_type, is_complete=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("units", "expected_charge"),
+    [
+        (0, 0),
+        (200, 0),
+        (201, 4.70),
+        (400, 940),
+        (401, 946.30),
+        (500, 1570),
+        (501, 2048.40),
+        (600, 2880),
+        (601, 2889.45),
+        (800, 4770),
+        (801, 4780.50),
+        (1000, 6870),
+        (1001, 6881.55),
+    ],
+)
+def test_tamil_nadu_electricity_charge_by_tariff_slab(units, expected_charge):
+    assert estimate_tamil_nadu_electricity_charge(units) == pytest.approx(
+        expected_charge
+    )
+
+
+def test_tamil_nadu_electricity_charge_rejects_negative_units():
+    with pytest.raises(ValueError, match="units must be a finite value >= 0"):
+        estimate_tamil_nadu_electricity_charge(-1)
+
+
+@pytest.mark.parametrize(
+    ("units", "expected_slab", "expected_rate"),
+    [
+        (113.23, "101–200 units", 0.0),
+        (400, "201–400 units", 4.70),
+        (500, "401–500 units", 6.30),
+        (501, "501–600 units", 8.40),
+        (1042.18, "Above 1000 units", 11.55),
+    ],
+)
+def test_tamil_nadu_tariff_slab_uses_cumulative_units(
+    units, expected_slab, expected_rate
+):
+    slab, rate = tamil_nadu_tariff_slab(units)
+    assert slab == expected_slab
+    assert rate == expected_rate
+
+
+def test_selected_date_charge_does_not_use_future_projected_consumption():
+    summary = calculate_summary(
+        target_units=1100,
+        period_start=date(2024, 1, 1),
+        period_end=date(2024, 1, 3),
+        today=date(2024, 1, 1),
+        records=[
+            rec(date(2024, 1, 1), 113.23),
+            rec(date(2024, 1, 2), 928.95, PREDICTED_DATA_TYPE),
+        ],
+    )
+    full_period_units = 1042.18
+
+    assert summary.cumulative_including_today == pytest.approx(113.23)
+    assert summary.predicted_cumulative_units == 0
+    assert estimate_tamil_nadu_electricity_charge(
+        summary.cumulative_including_today
+    ) == 0
+    assert estimate_tamil_nadu_electricity_charge(full_period_units) == pytest.approx(
+        7357.18
     )
 
 
