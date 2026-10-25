@@ -21,6 +21,7 @@ import pandas as pd
 import streamlit as st
 
 import db
+from billing_periods import format_billing_period_label
 from alerts import rule_based_alerts, ml_alert
 from calculations import ConsumptionRecord, calculate_summary
 from config import CLASSIFIER_WARNING_THRESHOLD, FEATURES
@@ -182,7 +183,9 @@ elif nav == "Billing period":
                 db.create_billing_period(
                     bp_id, uid, start, end, float(target), prior_units
                 )
-                st.success(f"Created period {bp_id}.")
+                st.success(
+                    f"Created period {format_billing_period_label(start.isoformat(), end.isoformat())}."
+                )
                 st.rerun()
 
     with tab_existing:
@@ -191,20 +194,36 @@ elif nav == "Billing period":
             st.info("No billing periods yet.")
         else:
             df = pd.DataFrame(periods)
+            df["period"] = df.apply(
+                lambda row: format_billing_period_label(
+                    row["period_start_date"], row["period_end_date"]
+                ),
+                axis=1,
+            )
             st.dataframe(
                 df[
                     [
-                        "billing_period_id",
+                        "period",
                         "period_start_date",
                         "period_end_date",
                         "target_units",
                         "previous_period_units",
                         "actual_final_units",
                     ]
-                ],
+                ].rename(columns={"period": "billing_period"}),
                 use_container_width=True,
             )
-            bp_id = st.selectbox("Update target for", df["billing_period_id"].tolist())
+            period_labels = {
+                p["billing_period_id"]: format_billing_period_label(
+                    p["period_start_date"], p["period_end_date"]
+                )
+                for p in periods
+            }
+            bp_id = st.selectbox(
+                "Update target for",
+                df["billing_period_id"].tolist(),
+                format_func=period_labels.__getitem__,
+            )
             new_target = st.number_input(
                 "New target units",
                 min_value=1.0,
@@ -314,13 +333,19 @@ elif nav == "Record daily usage":
         st.warning("Create a billing period first.")
         st.stop()
 
+    periods_by_id = {p["billing_period_id"]: p for p in periods}
     period_labels = {
-        f'{p["billing_period_id"]} '
-        f'({p["period_start_date"]} → {p["period_end_date"]})': p
-        for p in periods
+        bp_id: format_billing_period_label(
+            period["period_start_date"], period["period_end_date"]
+        )
+        for bp_id, period in periods_by_id.items()
     }
-    sel = st.selectbox("Billing period", list(period_labels.keys()))
-    period = period_labels[sel]
+    bp_id = st.selectbox(
+        "Billing period",
+        list(periods_by_id),
+        format_func=period_labels.__getitem__,
+    )
+    period = periods_by_id[bp_id]
     p_start = date.fromisoformat(period["period_start_date"])
     p_end = date.fromisoformat(period["period_end_date"])
 
@@ -380,13 +405,19 @@ elif nav == "Dashboard":
         st.warning("Create a billing period first.")
         st.stop()
 
-    labels = {
-        f'{p["billing_period_id"]} '
-        f'({p["period_start_date"]} → {p["period_end_date"]})': p
-        for p in periods
+    periods_by_id = {p["billing_period_id"]: p for p in periods}
+    period_labels = {
+        bp_id: format_billing_period_label(
+            period["period_start_date"], period["period_end_date"]
+        )
+        for bp_id, period in periods_by_id.items()
     }
-    sel = st.selectbox("Billing period", list(labels.keys()))
-    period = labels[sel]
+    bp_id = st.selectbox(
+        "Billing period",
+        list(periods_by_id),
+        format_func=period_labels.__getitem__,
+    )
+    period = periods_by_id[bp_id]
 
     p_start = date.fromisoformat(period["period_start_date"])
     p_end = date.fromisoformat(period["period_end_date"])
