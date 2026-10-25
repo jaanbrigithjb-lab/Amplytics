@@ -145,16 +145,23 @@ def calculate_summary(
         days_remaining = period_days
         cumulative_before = 0.0
         units_today = 0.0
+        todays_allowance = 0.0
     elif today > period_end:
         elapsed_days = period_days
         days_remaining = 0
         cumulative_before = sum(r.daily_units for r in period_records)
         units_today = 0.0
+        todays_allowance = 0.0
     else:
         elapsed_days = (today - period_start).days + 1
         days_remaining = (period_end - today).days + 1
         cumulative_before = sum(r.daily_units for r in period_records if r.date < today)
         units_today = sum(r.daily_units for r in period_records if r.date == today)
+        todays_allowance = (
+            max(0.0, target_units - cumulative_before) / days_remaining
+            if days_remaining > 0
+            else 0.0
+        )
 
     cumulative = cumulative_before + units_today
     measured = sum(
@@ -171,11 +178,6 @@ def calculate_summary(
     excess = max(0.0, cumulative - target_units)
     percent = (cumulative / target_units * 100.0) if target_units > 0 else 0.0
 
-    todays_allowance = (
-        max(0.0, target_units - cumulative_before) / days_remaining
-        if days_remaining > 0
-        else 0.0
-    )
     remaining_today = max(0.0, todays_allowance - units_today)
 
     average_daily = cumulative / elapsed_days if elapsed_days > 0 else 0.0
