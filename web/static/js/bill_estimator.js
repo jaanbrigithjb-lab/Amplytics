@@ -4,7 +4,7 @@
   const data = JSON.parse(dataElement.textContent);
   const days = data.days;
   const tariffSlabs = data.tariff_slabs;
-  const daySlider = document.getElementById("bill-day-slider");
+  const dayPicker = document.getElementById("bill-day-date");
 
   function chargeFor(units) {
     const slabs = units <= 500
@@ -48,7 +48,8 @@
   }
 
   function updateEstimate() {
-    const index = Number(daySlider.value);
+    const index = days.findIndex((day) => day.date === dayPicker.value);
+    if (index < 0) return;
     const day = days[index];
     let cumulativeUnits = 0;
     for (let i = 0; i <= index; i += 1) cumulativeUnits += days[i].units;
@@ -70,6 +71,6 @@
       `₹${slab.rate.toFixed(2)} per unit`;
   }
 
-  daySlider.addEventListener("input", updateEstimate);
+  dayPicker.addEventListener("change", updateEstimate);
   updateEstimate();
 })();

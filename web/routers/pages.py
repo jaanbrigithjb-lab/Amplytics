@@ -1,7 +1,6 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
-import csv, io
 from fastapi import UploadFile, File
 
 import pandas as pd
@@ -10,6 +9,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 import db
+from billing_periods import format_billing_period_label
 from alerts import ml_alert, rule_based_alerts
 from calculations import (
     ConsumptionRecord,
@@ -22,12 +22,14 @@ from calculations import (
 from config import CLASSIFIER_WARNING_THRESHOLD
 from model_loader import load_models, models_available, predict
 from validation import (
-    validate_appliance, validate_billing_period, validate_daily_record,
+    validate_billing_period, validate_daily_record,
 )
+from web.imports import read_daily_record_file
 from web.deps import current_uid, pop_flash, set_flash
 
 router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
+templates.env.filters["billing_period_label"] = format_billing_period_label
 
 
 @router.post("/consumption/import")
@@ -48,41 +50,28 @@ async def consumption_import(
     p_start = date.fromisoformat(period["period_start_date"])
     p_end = date.fromisoformat(period["period_end_date"])
 
-    # Decode file
     try:
-        raw = await file.read()
-        text = raw.decode("utf-8-sig")
-    except Exception:
-        set_flash(request, "error", "File could not be read as UTF-8.")
-        return RedirectResponse(f"/consumption?bp_id={bp_id}", 303)
-
-    try:
-        reader = csv.DictReader(io.StringIO(text))
-        rows = list(reader)
-    except Exception as e:
-        set_flash(request, "error", f"Could not parse CSV: {e}")
-        return RedirectResponse(f"/consumption?bp_id={bp_id}", 303)
-
-    required = {"date", "daily_units", "data_type"}
-    if not rows or not required.issubset(rows[0].keys()):
-        set_flash(
-            request,
-            "error",
-            f"CSV must have columns: date, daily_units, data_type "
-            f"(optional: input_method). Got: {list(rows[0].keys()) if rows else 'empty'}",
-        )
+        rows = read_daily_record_file(file.filename or "", await file.read())
+    except ValueError as exc:
+        set_flash(request, "error", str(exc))
         return RedirectResponse(f"/consumption?bp_id={bp_id}", 303)
 
     inserted, updated, rejected = 0, 0, []
     existing = {r["date"] for r in db.list_daily_records(bp_id)}
 
-    for i, row in enumerate(rows, start=2):  # header is line 1
+    for i, row in enumerate(rows, start=2):
         try:
-            rec_date = date.fromisoformat(row["date"].strip())
+            raw_date = row["date"]
+            if isinstance(raw_date, datetime):
+                rec_date = raw_date.date()
+            elif isinstance(raw_date, date):
+                rec_date = raw_date
+            else:
+                rec_date = date.fromisoformat(raw_date.strip())
             units = float(row["daily_units"])
             dtype = row["data_type"].strip()
             imethod = (row.get("input_method") or "import").strip()
-        except Exception as e:
+        except (AttributeError, KeyError, TypeError, ValueError) as e:
             rejected.append(f"line {i}: {e}")
             continue
 
@@ -152,7 +141,7 @@ def _month_bounds(today: date) -> tuple[date, date]:
 @router.get("/")
 def landing(request: Request):
     if current_uid(request):
-        return RedirectResponse("/dashboard", 303)
+        return RedirectResponse("/household", 303)
     return render(request, "landing.html")
 
 
@@ -175,14 +164,14 @@ def register(
         return RedirectResponse("/", 303)
     request.session["user_id"] = uid
     set_flash(request, "success", f"Household {display_name.strip()} created.")
-    return RedirectResponse("/billing", 303)
+    return RedirectResponse("/household", 303)
 
 
 @router.post("/switch")
 def switch_household(request: Request, uid: str = Form(...)):
     if db.get_user(uid):
         request.session["user_id"] = uid
-    return RedirectResponse("/dashboard", 303)
+    return RedirectResponse("/household", 303)
 
 
 @router.post("/logout")
@@ -297,7 +286,11 @@ def billing_create(
     except Exception as ex:
         set_flash(request, "error", f"Could not create period: {ex}")
         return RedirectResponse("/billing", 303)
-    set_flash(request, "success", f"Billing period {bp_id} created.")
+    set_flash(
+        request,
+        "success",
+        f"Billing period {format_billing_period_label(start, end)} created.",
+    )
     return RedirectResponse("/billing", 303)
 
 
@@ -323,63 +316,23 @@ def billing_delete(request: Request, bp_id: str = Form(...)):
     uid = current_uid(request)
     if not uid:
         return RedirectResponse("/", 303)
+    period = db.get_billing_period(bp_id)
     if db.delete_billing_period(bp_id, uid):
+        label = (
+            format_billing_period_label(
+                period["period_start_date"], period["period_end_date"]
+            )
+            if period
+            else "Billing period"
+        )
         set_flash(
             request,
             "success",
-            f"Billing period {bp_id} deleted (including its daily records).",
+            f"{label} deleted (including its daily records).",
         )
     else:
         set_flash(request, "error", "Could not delete billing period.")
     return RedirectResponse("/billing", 303)
-
-
-# ---------- appliances ----------
-
-@router.get("/appliances")
-def appliances_page(request: Request):
-    uid = current_uid(request)
-    if not uid:
-        return RedirectResponse("/", 303)
-    rows = db.list_appliances(uid)
-    for r in rows:
-        r["estimated_daily_units"] = round(
-            r["rated_power_watts"] * r["quantity"] * r["hours_per_day"] / 1000.0
-            * r["days_per_week"] / 7.0, 3
-        )
-    return render(request, "appliances.html", appliances=rows)
-
-
-@router.post("/appliances/add")
-def appliance_add(
-    request: Request,
-    name: str = Form(...),
-    atype: str = Form(""),
-    watts: float = Form(...),
-    qty: int = Form(1),
-    hours: float = Form(...),
-    days: float = Form(...),
-):
-    uid = current_uid(request)
-    if not uid:
-        return RedirectResponse("/", 303)
-    errors = validate_appliance(name, watts, qty, hours, days)
-    if errors:
-        for err in errors:
-            set_flash(request, "error", err)
-        return RedirectResponse("/appliances", 303)
-    db.create_appliance(uid, name.strip(), atype.strip() or None, float(watts), int(qty), float(hours), float(days))
-    set_flash(request, "success", "Appliance added.")
-    return RedirectResponse("/appliances", 303)
-
-
-@router.post("/appliances/{appliance_id}/delete")
-def appliance_delete(request: Request, appliance_id: int):
-    if not current_uid(request):
-        return RedirectResponse("/", 303)
-    db.delete_appliance(appliance_id)
-    set_flash(request, "success", "Appliance deleted.")
-    return RedirectResponse("/appliances", 303)
 
 
 # ---------- bill estimator ----------
