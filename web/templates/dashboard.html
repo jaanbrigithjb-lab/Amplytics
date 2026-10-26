@@ -105,8 +105,8 @@
     </div>
   </div>
 
-  {# Baseline vs ML #}
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  {# Baseline projection #}
+  <div>
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
       <h2 class="font-semibold text-slate-900">Baseline projection</h2>
       <p class="text-xs text-slate-500 mb-3">Rule-based, uses average daily × period days.</p>
@@ -116,18 +116,6 @@
       <p class="text-sm text-amber-700 mt-2">Above your target by {{ "%.2f"|format(summary.baseline_projected_final_units - summary.target_units) }} kWh.</p>
       {% else %}
       <p class="text-sm text-emerald-700 mt-2">Below your target.</p>
-      {% endif %}
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-      <h2 class="font-semibold text-slate-900">ML prediction <span class="text-xs font-normal text-slate-500">(estimate)</span></h2>
-      {% if ml_final is not none %}
-      <p class="text-xs text-slate-500 mb-3">Linear Regression on saved model. Not a confirmed bill.</p>
-      <p class="text-2xl font-semibold text-slate-900">{{ "%.2f"|format(ml_final) }} <span class="text-sm text-slate-500">kWh</span></p>
-      <p class="text-sm text-slate-600 mt-2">Exceedance probability: <b>{{ "%.1f"|format((ml_proba or 0) * 100) }}%</b></p>
-      <p class="text-xs text-slate-400 mt-2">Model source: {{ model_meta.get("data_source") if model_meta else "—" }} · trained {{ model_meta.get("trained_at") if model_meta else "—" }}</p>
-      {% else %}
-      <p class="text-sm text-slate-500 mt-3">Models not trained yet. Run <code>python scripts/train_models.py</code>.</p>
       {% endif %}
     </div>
   </div>
